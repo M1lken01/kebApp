@@ -23,7 +23,6 @@ const WebSocket = require('ws');
 const broadcast = async (clients, message, chat) => {
   clients.forEach(async (client) => {
     if (client.readyState === WebSocket.OPEN) {
-      //if (objectsAreEqual(chat, client.chat)) client.send(message);
       if (chat.type === 'group') {
         if (objectsAreEqual(chat, client.chat)) client.send(message);
       } else {
@@ -124,7 +123,6 @@ const upload = multer({
   storage: storage,
   fileFilter: function (req, file, cb) {
     if (!file.originalname.match(/\.(jpg|jpeg|png)$/)) return cb(new Error('Only image files are allowed.'), false);
-
     cb(null, true);
   },
 });

@@ -93,71 +93,6 @@ async function loadMessages() {
   }
 }
 
-async function loadMessagesOld() {
-  console.log(offset);
-  const uid = document.URL.split('?user=')[1];
-  const gid = document.URL.split('?group=')[1];
-  if (uid == undefined && gid == undefined) return;
-  //todo: fix repetition
-  if (uid == undefined) {
-    fetch(`/api/messages?group=${gid}&offset=${offset}`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
-        if (!data) return;
-        if (data.length > 0) {
-          let messages = document.getElementById('messages');
-          if (offset === 0) messages.innerHTML = '';
-          fetch('/api/id')
-            .then((res) => res.json())
-            .then((id) => {
-              console.log(id);
-              data.reverse().forEach((element) => {
-                const isSelf = id.toString() == element.sender_id.toString() ? 'self' : '';
-                let username = idNameCache[element.sender_id];
-                console.log(lastId, element.sender_id);
-                if (element.sender_id == lastId) {
-                  username = null;
-                } else {
-                  lastId = element.sender_id;
-                }
-                appendMessage({ sender: isSelf, content: element.content, username });
-              });
-            })
-            .catch((error) => {
-              console.error('Error:', error);
-            });
-          if (offset === 0) messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          offset++;
-        }
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-  } else {
-    fetch(`/api/messages?user=${uid}&offset=${offset}`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log(data);
-        if (!data) return;
-        if (data.length > 0) {
-          let messages = document.getElementById('messages');
-          if (offset === 0) messages.innerHTML = '';
-          data.reverse().forEach((element) => {
-            // receiver_id???
-            const isSelf = uid.toString() == element.receiver_id.toString() ? 'self' : '';
-            appendMessage({ sender: isSelf, content: element.content });
-          });
-          if (offset === 0) messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          offset++;
-        }
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-  }
-}
-
 async function loadContacts() {
   try {
     //const data = await (await fetch('/api/contacts')).json();
@@ -182,26 +117,6 @@ async function loadUsers() {
   } catch (error) {
     console.error('Error:', error);
   }
-}
-
-async function loadContactsOld() {
-  fetch('/api/contacts')
-    .then((response) => response.json())
-    .then((data) => {
-      console.log(data);
-      if (!data) return;
-      if (data.length > 0) {
-        data.forEach((element) => {
-          appendContact(element);
-          if (!element.title) {
-            idNameCache[element.id] = element.username;
-          }
-        });
-      }
-    })
-    .catch((error) => {
-      console.error('Error:', error);
-    });
 }
 
 /*function appendMessage(message) {
