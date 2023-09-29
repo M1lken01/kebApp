@@ -39,5 +39,5 @@ Thumbs.db
 # Uncomment the line below if you're using yarn:
 # yarn.lock
 
-src/imgs/user/*
-src/imgs/group/*
+src/public/imgs/user/*
+src/public/imgs/group/*
