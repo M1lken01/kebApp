@@ -221,8 +221,6 @@ router.get('/contacts/requests', async (req, res) => {
       [uid, uid, uid, limit],
     );
 
-    console.log(friendRequests);
-
     return res.json(friendRequests);
   } catch (error) {
     return renderErrorPage(res, langError('commonError') + ' during get contacts ' + error);

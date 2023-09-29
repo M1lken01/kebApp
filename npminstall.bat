@@ -1,1 +1,1 @@
-npm install express mysql2 body-parser dotenv ejs cookie-parser express-session bcrypt ws http multer
+npm install express mysql2 body-parser dotenv ejs cookie-parser express-session bcrypt ws http multer cache-control

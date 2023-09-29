@@ -8,6 +8,7 @@ const path = require('path');
 const app = express();
 const { createServer } = require('http');
 const WebSocket = require('ws');
+const cacheControl = require('cache-control');
 require('dotenv').config();
 
 // database
@@ -32,7 +33,7 @@ app.set('view engine', 'ejs');
 // middleware
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'src', 'public')));
+app.use(express.static(path.join(__dirname, 'src', 'public'), cacheControl({ maxAge: '1w' })));
 app.use(cookieParser());
 app.use(session({ secret: process.env.API_SESSION, resave: false, saveUninitialized: false }));
 
@@ -65,10 +66,12 @@ const webSocketServer = new WebSocket.Server({ server });
 webSocketServer.on('connection', (webSocket, req) => {
   console.info('Total connected clients:', webSocketServer.clients.size);
 
-  const params = req.url.split('?')[1].split('&')[0];
-  const chat = { type: params.split('=')[0], id: params.split('=')[1] };
-  webSocket.chat = chat;
-  webSocket.token = req.headers.cookie.split('token=')[1].split(';')[0];
+  if (req.url.includes('?')) {
+    const params = req.url.split('?')[1].split('&')[0];
+    const chat = { type: params.split('=')[0], id: params.split('=')[1] };
+    webSocket.chat = chat;
+    webSocket.token = req.headers.cookie.split('token=')[1].split(';')[0];
+  }
 
   app.locals.clients = webSocketServer.clients;
 });

@@ -1,3 +1,17 @@
+const socket = new WebSocket('ws://localhost:3000/');
+
+socket.addEventListener('open', (event) => {
+  console.log('WebSocket connection established.');
+});
+
+socket.addEventListener('close', (event) => {
+  console.log('WebSocket connection closed.');
+});
+
+socket.addEventListener('error', (error) => {
+  console.error('WebSocket error:', error);
+});
+
 const themeElem = document.getElementById('theme');
 const colorThemeElem = document.getElementById('color-theme');
 const notImplemented = () => alert('Feature not implemented yet');

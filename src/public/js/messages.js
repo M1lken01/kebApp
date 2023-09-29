@@ -2,7 +2,6 @@ const socket = new WebSocket('ws://localhost:3000/?' + document.URL.split('?')[1
 
 socket.addEventListener('open', (event) => {
   console.log('WebSocket connection established.');
-  console.log(event);
 });
 
 socket.addEventListener('message', (event) => {
