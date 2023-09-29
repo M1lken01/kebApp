@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <%- include('partials/head', {title}) %>
+  <body>
+    <div id="wrapper" class="friends-wrapper">
+      <nav>
+        <div id="user-bar-container">
+          <div id="user-bar">
+            <div>
+              <a href="/messages">&larr;</a>
+              <p>Friends</p>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <main>
+        work in progress. dont use
+        <div class="people">
+          <div class="search">
+            <input type="text" name="filter" id="filter" placeholder="search" />
+            <button id="filter-button">search</button>
+          </div>
+          <div class="requests">
+            <h4>Incoming friend requests</h4>
+            <ul></ul>
+          </div>
+          <div class="all">
+            <h4>Add new people or join groups</h4>
+            <ul></ul>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="./js/friends.js"></script>
+  </body>
+</html>

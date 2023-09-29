@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <%- include('partials/head', {title}) %>
+  <body>
+    <div id="wrapper" class="messages-wrapper">
+      <nav class="mobile-hide">
+        <div class="nav-bar">
+          <div>
+            <a href="/profile">&#9776;</a>
+            <p>Chats</p>
+          </div>
+          <a href="/friends">&plus;</a>
+        </div>
+        <div class="contacts">
+          <ul></ul>
+        </div>
+      </nav>
+      <main>
+        <div id="user-bar-container">
+          <div id="user-bar">
+            <div>
+              <a href="#" onclick="toggleSidebar()" class="desktop-hide">&larr;</a>
+              <p id="name"></p>
+            </div>
+            <a href="#" onclick="notImplemented()" class="desktop-hide">&#8285;</a>
+          </div>
+        </div>
+        <div id="messages-container">
+          <div id="messages"></div>
+        </div>
+        <% if (!none) { %>
+        <div id="controls">
+          <a href="#" onclick="notImplemented()" class="desktop-hide">☰</a>
+          <form action="/api/message" method="post">
+            <input type="hidden" name="receiver" value="<%= receiver %>" />
+            <input type="hidden" name="group" value="<%= group %>" />
+            <input type="text" name="content" minlength="1" maxlength="512" required />
+            <input type="submit" value="&#10148;" />
+          </form>
+        </div>
+        <% } %>
+      </main>
+    </div>
+    <script src="./js/messages.js"></script>
+  </body>
+</html>

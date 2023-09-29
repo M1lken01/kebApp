@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <%- include('partials/head', {title}) %>
+  <body>
+    <div id="wrapper" class="profile-wrapper">
+      <nav>
+        <div id="user-bar-container">
+          <div id="user-bar">
+            <div>
+              <a href="/messages">&larr;</a>
+              <p>Me</p>
+            </div>
+          </div>
+        </div>
+      </nav>
+      <main>
+        <div id="profile">
+          <img class="edit-pfp" src="./imgs/default_pfp_high.png" alt="pfp" />
+          <h2 id="username"></h2>
+          <div class="row">
+            <form action="/api/update/picture" method="post" enctype="multipart/form-data">
+              <input type="file" name="pfp" id="pfp" accept="image/png, image/jpeg" />
+              <input type="hidden" name="remove" value="0" />
+              <input type="hidden" name="userId" id="userId" value="" />
+              <input type="submit" value="Change profile picture" />
+            </form>
+          </div>
+          <div class="row">
+            <form>
+              <button onclick="setTheme('dark')">Dark &#9790;</button><button onclick="setTheme('light')">Light &#9728;</button></div>
+            </form>
+          <div class="row">
+            <form action="/api/logout" method="post"><input type="submit" value="Logout" /></form>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="./js/profile.js"></script>
+  </body>
+</html>

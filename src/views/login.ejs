@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <%- include('partials/head', {title}) %>
+  <body>
+    <div id="wrapper" class="login-wrapper">
+      <main>
+        <img src="./imgs/logo.png" alt="logo" class="large-logo" />
+        <% if (login) { %>
+        <form action="/api/login" method="post" class="form">
+          <label for="username">Username</label>
+          <input type="text" name="username" id="username" />
+          <label for="password">Password</label>
+          <input type="password" name="password" id="password" />
+          <input type="submit" value="Login" />
+        </form>
+        <p>Not a member? <a href="/register">Sign Up</a></p>
+        <% } else { %>
+        <form action="/api/register" method="post" class="form">
+          <label for="username">Username</label>
+          <input type="text" name="username" id="username" />
+          <label for="email">Email</label>
+          <input type="email" name="email" id="email" />
+          <label for="password">Password</label>
+          <input type="password" name="password" id="password" />
+          <label for="referral">Referral</label>
+          <input type="text" name="referral" id="referral" />
+          <input type="submit" value="Register" />
+        </form>
+        <p>Already a member? <a href="/login">Sign In</a></p>
+        <% } %>
+      </main>
+      <%- include('partials/footer') %>
+    </div>
+  </body>
+</html>
