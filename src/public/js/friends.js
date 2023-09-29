@@ -5,7 +5,7 @@ const requestsContainer = document.querySelector('.people .requests ul');
 
 async function loadContacts(filter = null) {
   try {
-    const data = await (await fetch('/api/contacts/all?filter=' + filter)).json();
+    const data = await (await fetch('/api/contacts/new?filter=' + filter)).json();
     console.log(data);
     if (!data) return;
     if (data.length === 0) return;
@@ -34,30 +34,52 @@ async function loadRequests() {
 }
 
 function appendContact(contact) {
-  if (document.getElementById(`accept-${contact.id}`)) return;
+  if ((document.getElementById(`accept-${contact.id}`) || document.getElementById(`delete-${contact.id}`)) && contact.username) return;
   let type = 'Add friend';
   let suffix = '';
+  let endpoint = 'add';
   if (!contact.username) {
     type = 'Join group';
     suffix = ' <span class="badge">group</span>';
+    endpoint = 'join';
   }
-  contactsContainer.innerHTML += `<li id="add-${contact.id}"><div><img src="./imgs/default_pfp_low.png" alt="pfp" /><p>${
+  contactsContainer.innerHTML += `<li><div><img src="./imgs/default_pfp_low.png" alt="pfp" /><p>${
     contact.username || contact.title
-  }${suffix}</p></div><button>${type}</button></li>`;
-  document.querySelector(`#add-${contact.id} button`).addEventListener('click', () => {
-    addFriend(contact.id);
-  });
+  }${suffix}</p></div><button id="${endpoint}-${contact.id}">${type}</button></li>`;
+  if (contact.username) {
+    addClickListener(`#${endpoint}-${contact.id}`, () => {
+      addFriend(contact.id);
+    });
+  }
 }
 
 function appendRequest(contact, sent = false) {
   let right = sent
-    ? `<button id="delete-${contact.id}")">Delete request</button>`
-    : `<div><button href="#" id="decline-${contact.id}")">Decline</button> | <button href="#" id="accept-${contact.id}")">Accept</button></div>`;
+    ? `<button id="delete-${contact.id}">Delete request</button>`
+    : `<div><button id="decline-${contact.id}">Decline</button> | <button id="accept-${contact.id}">Accept</button></div>`;
   let suffix = '';
   requestsContainer.innerHTML += `<li id="request-${contact.id}"><div><img src="./imgs/default_pfp_low.png" alt="pfp" /><p>${contact.username}${suffix}</p></div>${right}</li>`;
-  /*document.querySelector(`#add-${contact.id} a`).addEventListener('click', () => {
+  addClickListener(`#decline-${contact.id}`, () => {
+    removeFriend(contact.id);
+  });
+  addClickListener(`#delete-${contact.id}`, () => {
+    removeFriend(contact.id);
+  });
+  addClickListener(`#accept-${contact.id}`, () => {
     addFriend(contact.id);
-  });*/
+  });
+}
+
+function addClickListener(selector, eventHandler, delayMs = 100) {
+  setTimeout(() => {
+    const element = document.querySelector(selector);
+    if (element) element.addEventListener('click', eventHandler);
+  }, delayMs);
+}
+
+function setOuterHtml(selector, html) {
+  const element = document.querySelector(selector);
+  if (element) element.outerHTML = html;
 }
 
 filterElem.addEventListener('keydown', function (event) {
@@ -84,8 +106,31 @@ function addFriend(id) {
     .then((response) => response.json())
     .then((data) => {
       console.log(data);
-      if (data == null) {
-        document.querySelector(`#add-${id} a`).outerHTML = '<p>Friend request sent</p>';
+      if (data === null) {
+        setOuterHtml(`#add-${id}`, '<p>Friend request sent</p>');
+        setOuterHtml(`#accept-${id}`, '<p>Friend accepted</p>');
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+    });
+}
+
+function removeFriend(id) {
+  fetch(`api/del/${id}`, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({}),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log(data);
+      if (data === null) {
+        setOuterHtml(`#delete-${id}`, '<p>Friend removed</p>');
+        setOuterHtml(`#decline-${id}`, '<p>Friend declined</p>');
       }
     })
     .catch((error) => {

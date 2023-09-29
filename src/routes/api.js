@@ -19,6 +19,7 @@ const { langError } = require('./lang');
 const tokenAge = 1209600000; // 14 days (1 day = 86,400,000 milliseconds)
 
 const WebSocket = require('ws');
+const { compareSync } = require('bcrypt');
 
 const broadcast = async (clients, message, chat) => {
   clients.forEach(async (client) => {
@@ -54,7 +55,45 @@ router.post('/add/:id', async (req, res) => {
   try {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
     const uid = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0]?.id;
-    return res.json(await dbQuery(`INSERT INTO Friendships (user_id_1, user_id_2) VALUES (?, ?);`, [uid, req.params.id]));
+    //return res.json(await dbQuery(`INSERT INTO Friendships (user_id_1, user_id_2) VALUES (?, ?);`, [uid, req.params.id]));
+
+    const existingFriendship = await dbQuery('SELECT * FROM Friendships WHERE (user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?);', [
+      uid,
+      req.params.id,
+      req.params.id,
+      uid,
+    ]);
+    if (existingFriendship !== null) {
+      if (existingFriendship[0].state === 'pending') {
+        return res.json(
+          await dbQuery('UPDATE Friendships SET state = "accepted" WHERE (user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?);', [
+            uid,
+            req.params.id,
+            req.params.id,
+            uid,
+          ]),
+        );
+      }
+    } else {
+      return res.json(await dbQuery('INSERT INTO Friendships (user_id_1, user_id_2) VALUES (?, ?);', [uid, req.params.id]));
+    }
+  } catch (error) {
+    return res.json(error);
+  }
+});
+
+router.post('/del/:id', async (req, res) => {
+  try {
+    if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
+    const uid = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0]?.id;
+    return res.json(
+      await dbQuery(`DELETE FROM Friendships WHERE (user_id_1 = ? AND user_id_2 = ?) OR (user_id_2 = ? AND user_id_1 = ?);`, [
+        uid,
+        req.params.id,
+        uid,
+        req.params.id,
+      ]),
+    );
   } catch (error) {
     return res.json(error);
   }
@@ -236,15 +275,14 @@ router.get('/contacts/all', async (req, res) => {
 
     const uid = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0]?.id;
 
-    /*const contacts = await dbQuery('SELECT id, username, picture FROM Users LIMIT ?;', [limit]);
-    const groups = await dbQuery('SELECT id, title, participants, picture FROM Groupchats LIMIT ?;', [limit]);*/
     let contacts = [];
-    let userArgs = ['SELECT id, username, picture, created_on FROM Users WHERE id NOT LIKE ? LIMIT ?;', [uid, limit]];
-    let groupArgs = ['SELECT id, title, participants, picture, created_on FROM Groupchats LIMIT ?;', [limit]];
-
+    const userQuery = 'SELECT id, username, picture, created_on FROM Users WHERE id NOT LIKE ?';
+    const groupQuery = 'SELECT id, title, participants, picture, created_on FROM Groupchats';
+    let userArgs = [`${userQuery} LIMIT ?;`, [uid, limit]];
+    let groupArgs = [`${groupQuery} LIMIT ?;`, [limit]];
     if (filter != 'null') {
-      userArgs = ['SELECT id, username, picture, created_on FROM Users WHERE username LIKE ? AND id NOT LIKE ? LIMIT ?;', [`%${filter}%`, uid, limit]];
-      groupArgs = ['SELECT id, title, participants, created_on picture FROM Groupchats WHERE title LIKE ? LIMIT ?;', [`%${filter}%`, limit]];
+      userArgs = [`${userQuery} AND username LIKE ? LIMIT ?;`, [`%${filter}%`, uid, limit]];
+      groupArgs = [`${groupQuery} WHERE title LIKE ? LIMIT ?;`, [`%${filter}%`, limit]];
     }
     const users = await dbQuery(userArgs[0], userArgs[1]);
     const groups = await dbQuery(groupArgs[0], groupArgs[1]);
@@ -254,6 +292,39 @@ router.get('/contacts/all', async (req, res) => {
     return res.json(contacts);
   } catch (error) {
     return renderErrorPage(res, langError('commonError') + ' during get contacts ' + error);
+  }
+});
+
+router.get('/contacts/new', async (req, res) => {
+  try {
+    if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
+
+    const limit = req.query.limit || 64;
+    const selfId = (await dbQuery('SELECT id FROM Users WHERE token = ?', [req.cookies.token]))[0]?.id;
+
+    const newContacts = await dbQuery(
+      `
+      SELECT id, username, picture
+      FROM Users
+      WHERE id NOT IN (
+        SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(participants, '$[*].id'))
+        FROM Groupchats
+        WHERE JSON_UNQUOTE(JSON_EXTRACT(participants, '$[*].id')) IS NOT NULL
+      )
+      AND id NOT IN (
+        SELECT user_id_1 FROM Friendships WHERE user_id_2 = ?
+        UNION ALL
+        SELECT user_id_2 FROM Friendships WHERE user_id_1 = ?
+      )
+      AND id != ?
+      LIMIT ?;
+    `,
+      [selfId, selfId, selfId, limit],
+    );
+
+    res.json(newContacts);
+  } catch (error) {
+    return res.json(error);
   }
 });
 
@@ -281,7 +352,7 @@ router.get('/messages', async (req, res) => {
   try {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
 
-    const limit = parseInt(req.query.limit) || 128;
+    const limit = parseInt(req.query.limit) || 1024;
     const offset = parseInt(req.query.offset) || 0;
     const group = parseInt(req.query.group);
     const chat = parseInt(req.query.user);
