@@ -2,6 +2,7 @@ const filterElem = document.getElementById('filter');
 const filterButtonElem = document.getElementById('filter-button');
 const contactsContainer = document.querySelector('.people .all ul');
 const requestsContainer = document.querySelector('.people .requests ul');
+const knownContainer = document.querySelector('.people .known ul');
 
 async function loadContacts(filter = null) {
   try {
@@ -33,8 +34,23 @@ async function loadRequests() {
   }
 }
 
+async function loadKnown() {
+  try {
+    const data = await (await fetch('/api/contacts/?filter=null')).json();
+    console.log(data);
+    if (!data) return;
+    if (data.length === 0) return;
+    data.forEach((element) => {
+      appendKnown(element);
+      console.log(element);
+    });
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
 function appendContact(contact) {
-  if ((document.getElementById(`accept-${contact.id}`) || document.getElementById(`delete-${contact.id}`)) && contact.username) return;
+  if ((document.getElementById(`accept-${contact.id}`) || document.getElementById(`cancel-${contact.id}`)) && contact.username) return;
   let type = 'Add friend';
   let suffix = '';
   let endpoint = 'add';
@@ -55,19 +71,38 @@ function appendContact(contact) {
 
 function appendRequest(contact, sent = false) {
   let right = sent
-    ? `<button id="delete-${contact.id}">Delete request</button>`
+    ? `<button id="cancel-${contact.id}">Cancel request</button>`
     : `<div><button id="decline-${contact.id}">Decline</button> | <button id="accept-${contact.id}">Accept</button></div>`;
   let suffix = '';
   requestsContainer.innerHTML += `<li id="request-${contact.id}"><div><img src="./imgs/default_pfp_low.png" alt="pfp" /><p>${contact.username}${suffix}</p></div>${right}</li>`;
   addClickListener(`#decline-${contact.id}`, () => {
     removeFriend(contact.id);
   });
-  addClickListener(`#delete-${contact.id}`, () => {
+  addClickListener(`#cancel-${contact.id}`, () => {
     removeFriend(contact.id);
   });
   addClickListener(`#accept-${contact.id}`, () => {
     addFriend(contact.id);
   });
+}
+
+function appendKnown(contact) {
+  let type = 'Remove friend';
+  let suffix = '';
+  let endpoint = 'del';
+  if (!contact.username) {
+    type = 'Leave group';
+    suffix = ' <span class="badge">group</span>';
+    endpoint = 'leave';
+  }
+  knownContainer.innerHTML += `<li><div><img src="./imgs/default_pfp_low.png" alt="pfp" /><p>${
+    contact.username || contact.title
+  }${suffix}</p></div><button id="${endpoint}-${contact.id}">${type}</button></li>`;
+  if (contact.username) {
+    addClickListener(`#${endpoint}-${contact.id}`, () => {
+      removeFriend(contact.id);
+    });
+  }
 }
 
 function addClickListener(selector, eventHandler, delayMs = 100) {
@@ -77,9 +112,14 @@ function addClickListener(selector, eventHandler, delayMs = 100) {
   }, delayMs);
 }
 
-function setOuterHtml(selector, html) {
-  const element = document.querySelector(selector);
-  if (element) element.outerHTML = html;
+function setOuterHtml(selector, html, parent = false) {
+  try {
+    let element = document.querySelector(selector);
+    if (parent) element = element.parentElement;
+    if (element) element.outerHTML = html;
+  } catch (error) {
+    return console.log(error);
+  }
 }
 
 filterElem.addEventListener('keydown', function (event) {
@@ -108,7 +148,7 @@ function addFriend(id) {
       console.log(data);
       if (data === null) {
         setOuterHtml(`#add-${id}`, '<p>Friend request sent</p>');
-        setOuterHtml(`#accept-${id}`, '<p>Friend accepted</p>');
+        setOuterHtml(`#accept-${id}`, '<p>Friend accepted</p>', true);
       }
     })
     .catch((error) => {
@@ -129,8 +169,9 @@ function removeFriend(id) {
     .then((data) => {
       console.log(data);
       if (data === null) {
-        setOuterHtml(`#delete-${id}`, '<p>Friend removed</p>');
-        setOuterHtml(`#decline-${id}`, '<p>Friend declined</p>');
+        setOuterHtml(`#cancel-${id}`, '<p>Request cancelled</p>');
+        setOuterHtml(`#del-${id}`, '<p>Friend removed</p>');
+        setOuterHtml(`#decline-${id}`, '<p>Friend declined</p>', true);
       }
     })
     .catch((error) => {
@@ -141,6 +182,7 @@ function removeFriend(id) {
 function init() {
   loadContacts();
   loadRequests();
+  loadKnown();
 }
 
 window.addEventListener('load', init);

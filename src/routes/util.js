@@ -60,34 +60,9 @@ function validateMessage(message) {
   return !(!message || message.trim() === '' || message.length < 1 || message.length > 512);
 }
 
-async function hashPassword(password) {
-  return bcrypt.hash(password, saltRounds);
-}
+const hashPassword = async (password) => bcrypt.hash(password, saltRounds);
 
-async function comparePasswords(inputPassword, storedHashedPassword) {
-  return bcrypt.compare(inputPassword, storedHashedPassword);
-}
-
-async function getFriends(self, limit) {
-  return await dbQuery(
-    `SELECT Users.id, Users.username, Users.picture
-       FROM Users
-       INNER JOIN Friendships ON (Users.id = Friendships.user_id_1 OR Users.id = Friendships.user_id_2)
-       WHERE (Friendships.user_id_1 = ? OR Friendships.user_id_2 = ?) AND Friendships.state = 'accepted'
-       LIMIT ?;`,
-    [self, self, limit],
-  );
-}
-
-async function getGroups(self, limit) {
-  return await dbQuery(
-    `SELECT id, title, picture, participants, created_on
-       FROM Groupchats
-       WHERE JSON_CONTAINS(participants, CAST(? AS JSON))
-       LIMIT ?;`,
-    [self, limit],
-  );
-}
+const comparePasswords = async (inputPassword, storedHashedPassword) => bcrypt.compare(inputPassword, storedHashedPassword);
 
 async function expireReferrals() {
   try {
@@ -109,7 +84,5 @@ module.exports = {
   comparePasswords,
   renderErrorPage,
   throwError,
-  getFriends,
-  getGroups,
   expireReferrals,
 };

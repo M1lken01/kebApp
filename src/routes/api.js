@@ -12,8 +12,6 @@ const {
   validateEmail,
   validateUsername,
   validateMessage,
-  getFriends,
-  getGroups,
 } = require('./util');
 const { langError } = require('./lang');
 const tokenAge = 1209600000; // 14 days (1 day = 86,400,000 milliseconds)
@@ -302,7 +300,7 @@ router.get('/contacts/new', async (req, res) => {
     const limit = req.query.limit || 64;
     const selfId = (await dbQuery('SELECT id FROM Users WHERE token = ?', [req.cookies.token]))[0]?.id;
 
-    const newContacts = await dbQuery(
+    const contacts = await dbQuery(
       `
       SELECT id, username, picture
       FROM Users
@@ -322,7 +320,7 @@ router.get('/contacts/new', async (req, res) => {
       [selfId, selfId, selfId, limit],
     );
 
-    res.json(newContacts);
+    res.json(contacts);
   } catch (error) {
     return res.json(error);
   }
@@ -335,8 +333,21 @@ router.get('/contacts', async (req, res) => {
     const limit = req.query.limit || 64;
     const self = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0].id.toString();
 
-    const groups = await getGroups(self, limit);
-    const friends = await getFriends(self, limit);
+    const groups = await dbQuery(
+      `SELECT id, title, picture, participants, created_on
+       FROM Groupchats
+       WHERE JSON_CONTAINS(participants, CAST(? AS JSON))
+       LIMIT ?;`,
+      [self, limit],
+    );
+    const friends = await dbQuery(
+      `SELECT Users.id, Users.username, Users.picture
+       FROM Users
+       INNER JOIN Friendships ON (Users.id = Friendships.user_id_1 OR Users.id = Friendships.user_id_2)
+       WHERE (Friendships.user_id_1 = ? OR Friendships.user_id_2 = ?) AND Friendships.state = 'accepted' AND Users.id != ?
+       LIMIT ?;`,
+      [self, self, self, limit],
+    );
 
     let contacts = [];
     if (Array.isArray(friends) && friends.length > 0) contacts.push(...friends);

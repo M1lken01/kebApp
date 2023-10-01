@@ -306,7 +306,7 @@ footer {
   gap: 8px;
   align-items: center;
   color: var(--white);
-  background-color: var(--dark-mid);
+  background-color: var(--dark-light);
   border-radius: 8px;
   width: 100%;
   padding: 16px;
@@ -317,7 +317,7 @@ footer {
 }
 
 .contacts a:hover {
-  background-color: var(--dark-light);
+  background-color: var(--dark-mid);
 }
 
 .contacts img,
