@@ -331,6 +331,16 @@ footer {
   -o-border-radius: 50px;
 }
 
+.people > div {
+  width: 100%;
+}
+
+.people ul > p {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .nav-bar {
   display: flex;
   justify-content: space-between;

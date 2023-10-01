@@ -41,3 +41,5 @@ Thumbs.db
 
 src/public/imgs/user/*
 src/public/imgs/group/*
+
+.VSCodeCounter/

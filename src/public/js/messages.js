@@ -1,18 +1,18 @@
-const socket = new WebSocket('ws://localhost:3000/?' + document.URL.split('?')[1]);
+const socketMessage = new WebSocket('ws://localhost:3000/?' + document.URL.split('?')[1]);
 
-socket.addEventListener('open', (event) => {
-  console.log('WebSocket connection established.');
+socketMessage.addEventListener('open', (event) => {
+  console.log('WebSocket messages connection established.');
 });
 
-socket.addEventListener('message', (event) => {
+socketMessage.addEventListener('message', (event) => {
   const message = JSON.parse(event.data);
   fetch('/api/id')
     .then((res) => res.json())
     .then((selfUserId) => {
-      const uid = document.URL.split('?user=')[1];
-      const isSelf = selfUserId.toString() == message.senderId.toString() ? 'self' : '';
+      const chatPartnerId = document.URL.split('?user=')[1];
+      const isSelf = selfUserId.toString() === message.senderId.toString() ? 'self' : '';
       let senderId = message.senderId;
-      let username = uid === undefined && senderId !== lastId ? idNameCache.find((item) => item.id === senderId).username : null; // give username if group chat and new message group
+      let username = chatPartnerId === undefined && senderId !== lastId ? idNameCache.find((item) => item.id === senderId).username : null; // give username if group chat and new message group
       if (senderId !== lastId) lastId = senderId;
       console.log({ sender: isSelf, content: message.content, username });
       appendMessage({ sender: isSelf, content: message.content, username });
@@ -22,12 +22,12 @@ socket.addEventListener('message', (event) => {
     });
 });
 
-socket.addEventListener('close', (event) => {
-  console.log('WebSocket connection closed.');
+socketMessage.addEventListener('close', (event) => {
+  console.log('WebSocket messages connection closed.');
 });
 
-socket.addEventListener('error', (error) => {
-  console.error('WebSocket error:', error);
+socketMessage.addEventListener('error', (error) => {
+  console.error('WebSocket messages error:', error);
 });
 
 let idNameCache = {};
@@ -43,17 +43,17 @@ function loadMoreMessages() {
 //messagesContainer.addEventListener('scroll', loadMoreMessages);
 
 async function loadReceiver() {
-  const uid = document.URL.split('?user=')[1];
-  const gid = document.URL.split('?group=')[1];
-  if (uid == undefined && gid == undefined) return;
-  const name = document.getElementById('name');
+  const userUrlId = document.URL.split('?user=')[1];
+  const groupUrlId = document.URL.split('?group=')[1];
+  if (userUrlId === undefined && groupUrlId === undefined) return;
+  const chatName = document.getElementById('name');
   try {
     let response;
-    if (uid !== undefined) response = await fetch('/api/userdata/' + uid);
-    else if (gid !== undefined) response = await fetch('/api/groupdata/' + gid);
+    if (userUrlId !== undefined) response = await fetch('/api/userdata/' + userUrlId);
+    else if (groupUrlId !== undefined) response = await fetch('/api/groupdata/' + groupUrlId);
     if (response) {
       const data = await response.json();
-      name.innerHTML = data.username || data.title || '';
+      chatName.innerHTML = data.username || data.title || '';
     }
   } catch (error) {
     console.error('Error:', error);
@@ -62,11 +62,11 @@ async function loadReceiver() {
 
 async function loadMessages() {
   console.log(offset);
-  const uid = document.URL.split('?user=')[1];
-  const gid = document.URL.split('?group=')[1];
+  const userUrlId = document.URL.split('?user=')[1];
+  const groupUrlId = document.URL.split('?group=')[1];
 
-  if (uid === undefined && gid === undefined) return;
-  const queryParams = uid ? `user=${uid}` : `group=${gid}`;
+  if (userUrlId === undefined && groupUrlId === undefined) return;
+  const queryParams = userUrlId ? `user=${userUrlId}` : `group=${groupUrlId}`;
 
   try {
     const data = await (await fetch(`/api/messages?${queryParams}&offset=${offset}`)).json();
@@ -76,13 +76,13 @@ async function loadMessages() {
     if (offset === 0) document.getElementById('messages').innerHTML = '';
 
     const selfUserId = await fetch('/api/id').then((res) => res.json());
-    data.reverse().forEach((element) => {
-      const isSelf = selfUserId.toString() == element.sender_id.toString() ? 'self' : '';
+    data.reverse().forEach((message) => {
+      const isSelf = selfUserId.toString() === message.sender_id.toString() ? 'self' : '';
 
-      let username = uid === undefined && element.sender_id !== lastId ? idNameCache.find((item) => item.id === element.sender_id).username : null; // give username if group chat and new message group
-      if (element.sender_id !== lastId) lastId = element.sender_id;
+      let username = userUrlId === undefined && message.sender_id !== lastId ? idNameCache.find((item) => item.id === message.sender_id).username : null; // give username if group chat and new message group
+      if (message.sender_id !== lastId) lastId = message.sender_id;
 
-      appendMessage({ sender: isSelf, content: element.content, username });
+      appendMessage({ sender: isSelf, content: message.content, username });
     });
 
     if (offset === 0) messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -99,9 +99,9 @@ async function loadContacts() {
     console.log(data);
     if (!data) return;
     if (data.length === 0) return;
-    data.forEach((element) => {
-      appendContact(element);
-      //if (!element.title) idNameCache[element.id] = element.username;
+    data.forEach((contact) => {
+      appendContact(contact);
+      //if (!contact.title) idNameCache[contact.id] = contact.username;
     });
   } catch (error) {
     console.error('Error:', error);
@@ -117,10 +117,6 @@ async function loadUsers() {
     console.error('Error:', error);
   }
 }
-
-/*function appendMessage(message) {
-  document.getElementById('messages').innerHTML += `<div class="message-container ${message.sender}"><div class="message">${message.content}</div></div>`;
-}*/
 
 function appendMessage(message) {
   const messages = document.getElementById('messages');
@@ -152,7 +148,7 @@ function appendMessage(message) {
 }
 
 function appendContact(contact) {
-  const type = contact.title == undefined || contact.title == null ? 'user' : 'group';
+  const type = contact.title === undefined || contact.title === null ? 'user' : 'group';
   const contactContainer = document.createElement('li');
 
   const link = document.createElement('a');
@@ -163,7 +159,6 @@ function appendContact(contact) {
   profilePic.alt = 'pfp';
 
   const name = document.createElement('p');
-  //name.textContent = contact.username || contact.title + ' <span class="badge">group</span>';
   name.innerHTML = contact.username || contact.title + ' <span class="badge">group</span>';
 
   // important: ^ this prolly voulnarible
@@ -188,14 +183,6 @@ function showContacts() {
 function toggleSidebar(show = true) {
   document.getElementsByClassName('mobile-hide')[0].classList.remove('mobile-hide');
   document.querySelector(show ? 'main' : 'nav').classList.add('mobile-hide');
-}
-
-function parseCookies(cookieString) {
-  return cookieString.split('; ').reduce((cookieObject, cookie) => {
-    const [name, value] = cookie.split('=');
-    cookieObject[name] = decodeURIComponent(value);
-    return cookieObject;
-  }, {});
 }
 
 function init() {

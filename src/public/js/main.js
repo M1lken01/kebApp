@@ -46,6 +46,14 @@ function loadTheme() {
   else setTheme(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
 }
 
+function parseCookies(cookieString) {
+  return cookieString.split('; ').reduce((cookieObject, cookie) => {
+    const [name, value] = cookie.split('=');
+    cookieObject[name] = decodeURIComponent(value);
+    return cookieObject;
+  }, {});
+}
+
 function init() {
   loadTheme();
 }

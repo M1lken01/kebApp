@@ -10,8 +10,9 @@ async function loadContacts(filter = null) {
     console.log(data);
     if (!data) return;
     if (data.length === 0) return;
-    data.forEach((element) => {
-      appendContact(element);
+    contactsContainer.innerHTML = '';
+    data.forEach((contact) => {
+      appendContact(contact);
     });
   } catch (error) {
     console.error('Error:', error);
@@ -24,6 +25,7 @@ async function loadRequests() {
     console.log(data);
     if (!data) return;
     if (data.length === 0) return;
+    requestsContainer.innerHTML = '';
     data.forEach((element) => {
       if (element.requestStatus === 'requestReceived' && element.id === element.user_id_1) appendRequest(element);
       if (element.requestStatus === 'requestSent' && element.id === element.user_id_2) appendRequest(element, true);
@@ -40,9 +42,9 @@ async function loadKnown() {
     console.log(data);
     if (!data) return;
     if (data.length === 0) return;
-    data.forEach((element) => {
-      appendKnown(element);
-      console.log(element);
+    knownContainer.innerHTML = '';
+    data.forEach((contact) => {
+      appendKnown(contact);
     });
   } catch (error) {
     console.error('Error:', error);
@@ -51,17 +53,20 @@ async function loadKnown() {
 
 function appendContact(contact) {
   if ((document.getElementById(`accept-${contact.id}`) || document.getElementById(`cancel-${contact.id}`)) && contact.username) return;
-  let type = 'Add friend';
+  let type = 'user';
+  let typeText = 'Add friend';
   let suffix = '';
   let endpoint = 'add';
   if (!contact.username) {
-    type = 'Join group';
+    type = 'group';
+    typeText = 'Join group';
     suffix = ' <span class="badge">group</span>';
     endpoint = 'join';
   }
-  contactsContainer.innerHTML += `<li><div><img src="./imgs/default_pfp_low.png" alt="pfp" /><p>${
+  let profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
+  contactsContainer.innerHTML += `<li><div><img src=".${profilePic}" alt="pfp" /><p>${
     contact.username || contact.title
-  }${suffix}</p></div><button id="${endpoint}-${contact.id}">${type}</button></li>`;
+  }${suffix}</p></div><button id="${endpoint}-${contact.id}">${typeText}</button></li>`;
   if (contact.username) {
     addClickListener(`#${endpoint}-${contact.id}`, () => {
       addFriend(contact.id);
@@ -74,7 +79,9 @@ function appendRequest(contact, sent = false) {
     ? `<button id="cancel-${contact.id}">Cancel request</button>`
     : `<div><button id="decline-${contact.id}">Decline</button> | <button id="accept-${contact.id}">Accept</button></div>`;
   let suffix = '';
-  requestsContainer.innerHTML += `<li id="request-${contact.id}"><div><img src="./imgs/default_pfp_low.png" alt="pfp" /><p>${contact.username}${suffix}</p></div>${right}</li>`;
+  let type = !contact.username ? 'group' : 'user';
+  let profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
+  requestsContainer.innerHTML += `<li id="request-${contact.id}"><div><img src="${profilePic}" alt="pfp" /><p>${contact.username}${suffix}</p></div>${right}</li>`;
   addClickListener(`#decline-${contact.id}`, () => {
     removeFriend(contact.id);
   });
@@ -87,17 +94,20 @@ function appendRequest(contact, sent = false) {
 }
 
 function appendKnown(contact) {
-  let type = 'Remove friend';
+  let type = 'user';
+  let typeText = 'Remove friend';
   let suffix = '';
   let endpoint = 'del';
   if (!contact.username) {
-    type = 'Leave group';
+    type = 'group';
+    typeText = 'Leave group';
     suffix = ' <span class="badge">group</span>';
     endpoint = 'leave';
   }
-  knownContainer.innerHTML += `<li><div><img src="./imgs/default_pfp_low.png" alt="pfp" /><p>${
+  let profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
+  knownContainer.innerHTML += `<li><div><img src="${profilePic}" alt="pfp" /><p>${
     contact.username || contact.title
-  }${suffix}</p></div><button id="${endpoint}-${contact.id}">${type}</button></li>`;
+  }${suffix}</p></div><button id="${endpoint}-${contact.id}">${typeText}</button></li>`;
   if (contact.username) {
     addClickListener(`#${endpoint}-${contact.id}`, () => {
       removeFriend(contact.id);
@@ -130,7 +140,6 @@ filterButtonElem.addEventListener('click', filter);
 
 function filter() {
   contactsContainer.innerHTML = '';
-  console.log(filterElem.value);
   loadContacts(filterElem.value);
 }
 

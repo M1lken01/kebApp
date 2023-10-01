@@ -1,16 +1,16 @@
-const imageInput = document.getElementById('pfp');
-const imagePreview = document.getElementsByClassName('edit-pfp')[0];
+const pfpInput = document.getElementById('pfp');
+const pfpPreview = document.getElementsByClassName('edit-pfp')[0];
 
-imageInput.addEventListener('change', function () {
-  const file = this.files[0];
-  if (file) {
+pfpInput.addEventListener('change', function () {
+  const img = this.files[0];
+  if (img) {
     const reader = new FileReader();
     reader.onload = function (e) {
-      imagePreview.src = e.target.result;
+      pfpPreview.src = e.target.result;
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(img);
   } else {
-    imagePreview.src = '';
+    pfpPreview.src = '';
   }
 });
 
