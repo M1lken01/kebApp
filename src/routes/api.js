@@ -17,7 +17,6 @@ const { langError } = require('./lang');
 const tokenAge = 1209600000; // 14 days (1 day = 86,400,000 milliseconds)
 
 const WebSocket = require('ws');
-const { compareSync } = require('bcrypt');
 
 const broadcast = async (clients, message, chat) => {
   clients.forEach(async (client) => {
@@ -196,7 +195,7 @@ router.post('/update/password', async (req, res) => {
 
 router.post('/update/email', async (req, res) => {
   try {
-    if (!hasPermission(req.cookies)) return res.send('no permission');
+    if (!hasPermission(req.cookies, 4)) return res.send('no permission');
 
     // todo: add exists check n stuff
 
@@ -213,7 +212,7 @@ router.post('/update/email', async (req, res) => {
 
 router.post('/update/token', async (req, res) => {
   try {
-    if (!hasPermission(req.cookies)) return res.send('no permission');
+    if (!hasPermission(req.cookies, 4)) return res.send('no permission');
 
     const oldToken = req.body.token || req.cookies.token;
     const newToken = await generateRandomToken();
@@ -232,7 +231,7 @@ router.post('/update/token', async (req, res) => {
 
 router.get('/contacts/requests', async (req, res) => {
   try {
-    if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
+    if (!hasPermission(req.cookies, 4)) return res.json(langError('noPerm', true));
 
     const limit = req.query.limit || 64;
 
