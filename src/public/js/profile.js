@@ -20,9 +20,9 @@ function init() {
     .then((data) => {
       console.log(data);
       if (!data) return;
-      document.getElementById('username').innerHTML += data.username;
-      document.getElementById('userId').ariaValueMax += data.id;
-      if (data.picture == true) imagePreview.src = `./imgs/user/${data.id}.png`;
+      document.getElementById('username').innerHTML = data.username;
+      document.getElementById('userId').value = data.id;
+      if (data.picture === 1) pfpPreview.src = `./imgs/user/${data.id}.png`;
     })
     .catch((error) => {
       console.error('Error:', error);

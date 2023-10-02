@@ -60,6 +60,8 @@ function validateMessage(message) {
   return !(!message || message.trim() === '' || message.length < 1 || message.length > 512);
 }
 
+const getIdByToken = async (token) => (await dbQuery('SELECT id FROM Users WHERE token = ?;', [token]))[0]?.id;
+
 const hashPassword = async (password) => bcrypt.hash(password, saltRounds);
 
 const comparePasswords = async (inputPassword, storedHashedPassword) => bcrypt.compare(inputPassword, storedHashedPassword);
@@ -85,4 +87,5 @@ module.exports = {
   renderErrorPage,
   throwError,
   expireReferrals,
+  getIdByToken,
 };

@@ -68,8 +68,12 @@ function appendContact(contact) {
     contact.username || contact.title
   }${suffix}</p></div><button id="${endpoint}-${contact.id}">${typeText}</button></li>`;
   if (contact.username) {
-    addClickListener(`#${endpoint}-${contact.id}`, () => {
-      addFriend(contact.id);
+    addClickListener(`#${endpoint}-${contact.id}`, async () => {
+      await addFriend(contact.id);
+    });
+  } else if (contact.title) {
+    addClickListener(`#${endpoint}-${contact.id}`, async () => {
+      await joinGroup(contact.id);
     });
   }
 }
@@ -82,14 +86,14 @@ function appendRequest(contact, sent = false) {
   let type = !contact.username ? 'group' : 'user';
   let profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
   requestsContainer.innerHTML += `<li id="request-${contact.id}"><div><img src="${profilePic}" alt="pfp" /><p>${contact.username}${suffix}</p></div>${right}</li>`;
-  addClickListener(`#decline-${contact.id}`, () => {
-    removeFriend(contact.id);
+  addClickListener(`#decline-${contact.id}`, async () => {
+    await removeFriend(contact.id);
   });
-  addClickListener(`#cancel-${contact.id}`, () => {
-    removeFriend(contact.id);
+  addClickListener(`#cancel-${contact.id}`, async () => {
+    await removeFriend(contact.id);
   });
-  addClickListener(`#accept-${contact.id}`, () => {
-    addFriend(contact.id);
+  addClickListener(`#accept-${contact.id}`, async () => {
+    await addFriend(contact.id);
   });
 }
 
@@ -109,8 +113,12 @@ function appendKnown(contact) {
     contact.username || contact.title
   }${suffix}</p></div><button id="${endpoint}-${contact.id}">${typeText}</button></li>`;
   if (contact.username) {
-    addClickListener(`#${endpoint}-${contact.id}`, () => {
-      removeFriend(contact.id);
+    addClickListener(`#${endpoint}-${contact.id}`, async () => {
+      await removeFriend(contact.id);
+    });
+  } else if (contact.title) {
+    addClickListener(`#${endpoint}-${contact.id}`, async () => {
+      await leaveGroup(contact.id);
     });
   }
 }
@@ -143,49 +151,76 @@ function filter() {
   loadContacts(filterElem.value);
 }
 
-function addFriend(id) {
-  fetch(`api/add/${id}`, {
-    method: 'POST',
-    credentials: 'same-origin',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({}),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log(data);
-      if (data === null) {
-        setOuterHtml(`#add-${id}`, '<p>Friend request sent</p>');
-        setOuterHtml(`#accept-${id}`, '<p>Friend accepted</p>', true);
-      }
-    })
-    .catch((error) => {
-      console.error('Error:', error);
+async function addFriend(id) {
+  try {
+    const response = await fetch(`api/add/${id}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
     });
+    if (response === null || response.status === 200) {
+      setOuterHtml(`#add-${id}`, '<p>Friend request sent</p>');
+      setOuterHtml(`#accept-${id}`, '<p>Friend accepted</p>', true);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
 }
 
-function removeFriend(id) {
-  fetch(`api/del/${id}`, {
+async function removeFriend(id) {
+  try {
+    const response = await fetch(`api/del/${id}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+    if (response === null || response.status === 200) {
+      setOuterHtml(`#cancel-${id}`, '<p>Request cancelled</p>');
+      setOuterHtml(`#del-${id}`, '<p>Friend removed</p>');
+      setOuterHtml(`#decline-${id}`, '<p>Friend declined</p>', true);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+async function joinGroup(id) {
+  try {
+    const response = await fetch(`api/join/${id}`, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+    if (response === null || response.status === 200) {
+      setOuterHtml(`#join-${id}`, '<p>Joined the group</p>');
+    }
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+async function leaveGroup(id) {
+  const response = await fetch(`api/leave/${id}`, {
     method: 'POST',
     credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({}),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      console.log(data);
-      if (data === null) {
-        setOuterHtml(`#cancel-${id}`, '<p>Request cancelled</p>');
-        setOuterHtml(`#del-${id}`, '<p>Friend removed</p>');
-        setOuterHtml(`#decline-${id}`, '<p>Friend declined</p>', true);
-      }
-    })
-    .catch((error) => {
-      console.error('Error:', error);
-    });
+  });
+  console.log(response);
+  if (response === null || response.status === 200) {
+    setOuterHtml(`#leave-${id}`, '<p>Left the group</p>');
+  }
 }
 
 function init() {

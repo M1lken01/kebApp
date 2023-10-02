@@ -12,6 +12,7 @@ const {
   validateEmail,
   validateUsername,
   validateMessage,
+  getIdByToken,
 } = require('./util');
 const { langError } = require('./lang');
 const tokenAge = 1209600000; // 14 days (1 day = 86,400,000 milliseconds)
@@ -51,28 +52,26 @@ router.post('/promote', async (req, res) => {
 router.post('/add/:id', async (req, res) => {
   try {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
-    const uid = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0]?.id;
-    //return res.json(await dbQuery(`INSERT INTO Friendships (user_id_1, user_id_2) VALUES (?, ?);`, [uid, req.params.id]));
-
+    const selfId = await getIdByToken(req.cookies.token);
     const existingFriendship = await dbQuery('SELECT * FROM Friendships WHERE (user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?);', [
-      uid,
+      selfId,
       req.params.id,
       req.params.id,
-      uid,
+      selfId,
     ]);
-    if (existingFriendship !== null) {
-      if (existingFriendship[0].state === 'pending') {
-        return res.json(
-          await dbQuery('UPDATE Friendships SET state = "accepted" WHERE (user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?);', [
-            uid,
-            req.params.id,
-            req.params.id,
-            uid,
-          ]),
-        );
-      }
+    if (existingFriendship !== null && existingFriendship[0].state === 'pending') {
+      // if accept
+      return res.json(
+        await dbQuery('UPDATE Friendships SET state = "accepted" WHERE (user_id_1 = ? AND user_id_2 = ?) OR (user_id_1 = ? AND user_id_2 = ?);', [
+          selfId,
+          req.params.id,
+          req.params.id,
+          selfId,
+        ]),
+      );
     } else {
-      return res.json(await dbQuery('INSERT INTO Friendships (user_id_1, user_id_2) VALUES (?, ?);', [uid, req.params.id]));
+      // if add
+      return res.json(await dbQuery('INSERT INTO Friendships (user_id_1, user_id_2) VALUES (?, ?);', [selfId, req.params.id]));
     }
   } catch (error) {
     return res.json(error);
@@ -82,12 +81,12 @@ router.post('/add/:id', async (req, res) => {
 router.post('/del/:id', async (req, res) => {
   try {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
-    const uid = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0]?.id;
+    const selfId = await getIdByToken(req.cookies.token);
     return res.json(
       await dbQuery(`DELETE FROM Friendships WHERE (user_id_1 = ? AND user_id_2 = ?) OR (user_id_2 = ? AND user_id_1 = ?);`, [
-        uid,
+        selfId,
         req.params.id,
-        uid,
+        selfId,
         req.params.id,
       ]),
     );
@@ -96,10 +95,30 @@ router.post('/del/:id', async (req, res) => {
   }
 });
 
-router.get('/userdata/:id', async (req, res) => {
+router.post('/join/:id', async (req, res) => {
   try {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
-    return res.json((await dbQuery('SELECT username FROM Users WHERE id = ?;', [req.params.id]))[0]);
+    const selfId = await getIdByToken(req.cookies.token);
+    const groupId = req.params.id;
+    let participantsArray = JSON.parse((await dbQuery('SELECT participants FROM Groupchats WHERE id = ?;', [groupId]))[0]?.participants);
+    if (!Array.isArray(participantsArray)) participantsArray = [participantsArray];
+    participantsArray.push(selfId);
+    return res.json(await dbQuery('UPDATE Groupchats SET participants = ? WHERE id = ?;', [JSON.stringify(participantsArray), groupId]));
+  } catch (error) {
+    return res.json(error);
+  }
+});
+
+router.post('/leave/:id', async (req, res) => {
+  try {
+    if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
+    const selfId = await getIdByToken(req.cookies.token);
+    const groupId = req.params.id;
+    let participantsArray = (await dbQuery('SELECT participants FROM Groupchats WHERE id = ?;', [groupId]))[0]?.participants;
+    console.log(participantsArray);
+    participantsArray.splice(participantsArray.indexOf(selfId), 1);
+    console.log(participantsArray);
+    return res.json(await dbQuery('UPDATE Groupchats SET participants = ? WHERE id = ?;', [JSON.stringify(participantsArray), groupId]));
   } catch (error) {
     return res.json(error);
   }
@@ -107,9 +126,19 @@ router.get('/userdata/:id', async (req, res) => {
 
 router.get('/users', async (req, res) => {
   try {
-    if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
-    const limit = req.query.limit || 128;
-    return res.json(await dbQuery('SELECT id, username FROM Users LIMIT ?;', [limit]));
+    return !hasPermission(req.cookies)
+      ? res.json(langError('noPerm', true))
+      : res.json(await dbQuery('SELECT id, username FROM Users LIMIT ?;', [req.query.limit || 128]));
+  } catch (error) {
+    return res.json(error);
+  }
+});
+
+router.get('/userdata/:id', async (req, res) => {
+  try {
+    return !hasPermission(req.cookies)
+      ? res.json(langError('noPerm', true))
+      : res.json((await dbQuery('SELECT * FROM Users WHERE id = ?;', [req.params.id]))[0]);
   } catch (error) {
     return res.json(error);
   }
@@ -117,8 +146,9 @@ router.get('/users', async (req, res) => {
 
 router.get('/groupdata/:id', async (req, res) => {
   try {
-    if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
-    return res.json((await dbQuery('SELECT title FROM Groupchats WHERE id = ?;', [req.params.id]))[0]);
+    return !hasPermission(req.cookies)
+      ? res.json(langError('noPerm', true))
+      : res.json((await dbQuery('SELECT * FROM Groupchats WHERE id = ?;', [req.params.id]))[0]);
   } catch (error) {
     return res.json(error);
   }
@@ -139,8 +169,7 @@ router.get('/shortuser', async (req, res) => {
 router.get('/id', async (req, res) => {
   try {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
-    const uid = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0]?.id;
-    return res.json(uid);
+    return res.json(await getIdByToken(req.cookies.token));
   } catch (error) {
     return res.json(error);
   }
@@ -234,8 +263,7 @@ router.get('/contacts/requests', async (req, res) => {
     if (!hasPermission(req.cookies, 4)) return res.json(langError('noPerm', true));
 
     const limit = req.query.limit || 64;
-
-    const uid = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0]?.id;
+    const selfId = await getIdByToken(req.cookies.token);
 
     const friendRequests = await dbQuery(
       `
@@ -254,7 +282,7 @@ router.get('/contacts/requests', async (req, res) => {
     WHERE (Friendships.user_id_1 = ? OR Friendships.user_id_2 = ?) AND Friendships.state = 'pending'
     LIMIT ?;
     `,
-      [uid, uid, uid, limit],
+      [selfId, selfId, selfId, limit],
     );
 
     return res.json(friendRequests);
@@ -269,16 +297,15 @@ router.get('/contacts/all', async (req, res) => {
 
     const limit = req.query.limit || 64;
     const filter = req.query.filter;
-
-    const uid = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0]?.id;
+    const selfId = await getIdByToken(req.cookies.token);
 
     let contacts = [];
     const userQuery = 'SELECT id, username, picture, created_on FROM Users WHERE id NOT LIKE ?';
     const groupQuery = 'SELECT id, title, participants, picture, created_on FROM Groupchats';
-    let userArgs = [`${userQuery} LIMIT ?;`, [uid, limit]];
+    let userArgs = [`${userQuery} LIMIT ?;`, [selfId, limit]];
     let groupArgs = [`${groupQuery} LIMIT ?;`, [limit]];
     if (filter != 'null') {
-      userArgs = [`${userQuery} AND username LIKE ? LIMIT ?;`, [`%${filter}%`, uid, limit]];
+      userArgs = [`${userQuery} AND username LIKE ? LIMIT ?;`, [`%${filter}%`, selfId, limit]];
       groupArgs = [`${groupQuery} WHERE title LIKE ? LIMIT ?;`, [`%${filter}%`, limit]];
     }
     const users = await dbQuery(userArgs[0], userArgs[1]);
@@ -297,9 +324,9 @@ router.get('/contacts/new', async (req, res) => {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
 
     const limit = req.query.limit || 64;
-    const selfId = (await dbQuery('SELECT id FROM Users WHERE token = ?', [req.cookies.token]))[0]?.id;
+    const selfId = await getIdByToken(req.cookies.token);
 
-    const contacts = await dbQuery(
+    const contacts1 = await dbQuery(
       `
       SELECT id, username, picture
       FROM Users
@@ -319,6 +346,32 @@ router.get('/contacts/new', async (req, res) => {
       [selfId, selfId, selfId, limit],
     );
 
+    const groups = await dbQuery(
+      `
+      SELECT id, title, picture, participants, created_on
+      FROM Groupchats
+      WHERE NOT JSON_CONTAINS(participants, CAST(? AS JSON))
+      LIMIT ?;`,
+      [selfId, limit],
+    );
+    const friends = await dbQuery(
+      `
+      SELECT Users.id, Users.username, Users.picture
+      FROM Users
+      WHERE id NOT IN (
+        SELECT user_id_1 FROM Friendships WHERE user_id_2 = ?
+        UNION ALL
+        SELECT user_id_2 FROM Friendships WHERE user_id_1 = ?
+      )
+      AND id != ?
+      LIMIT ?;`,
+      [selfId, selfId, selfId, limit],
+    );
+
+    let contacts = [];
+    if (Array.isArray(friends) && friends.length > 0) contacts.push(...friends);
+    if (Array.isArray(groups) && groups.length > 0) contacts.push(...groups);
+
     res.json(contacts);
   } catch (error) {
     return res.json(error);
@@ -330,14 +383,14 @@ router.get('/contacts', async (req, res) => {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
 
     const limit = req.query.limit || 64;
-    const self = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0].id.toString();
+    const selfId = await getIdByToken(req.cookies.token);
 
     const groups = await dbQuery(
       `SELECT id, title, picture, participants, created_on
        FROM Groupchats
        WHERE JSON_CONTAINS(participants, CAST(? AS JSON))
        LIMIT ?;`,
-      [self, limit],
+      [selfId, limit],
     );
     const friends = await dbQuery(
       `SELECT Users.id, Users.username, Users.picture
@@ -345,7 +398,7 @@ router.get('/contacts', async (req, res) => {
        INNER JOIN Friendships ON (Users.id = Friendships.user_id_1 OR Users.id = Friendships.user_id_2)
        WHERE (Friendships.user_id_1 = ? OR Friendships.user_id_2 = ?) AND Friendships.state = 'accepted' AND Users.id != ?
        LIMIT ?;`,
-      [self, self, self, limit],
+      [selfId, selfId, selfId, limit],
     );
 
     let contacts = [];
@@ -364,27 +417,29 @@ router.get('/messages', async (req, res) => {
 
     const limit = parseInt(req.query.limit) || 1024;
     const offset = parseInt(req.query.offset) || 0;
-    const group = parseInt(req.query.group);
-    const chat = parseInt(req.query.user);
+    const chatGroupId = parseInt(req.query.group);
+    const chatUserId = parseInt(req.query.user);
 
-    const sender = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [req.cookies.token]))[0].id.toString();
-    if (!chat && group) {
-      const participants = (await dbQuery('SELECT participants FROM Groupchats WHERE id = ?;', [group]))[0]?.participants.join(', ');
-      const messages = await dbQuery(
+    const selfId = await getIdByToken(req.cookies.token);
+    let messages;
+    if (!chatUserId && chatGroupId) {
+      const participants = (await dbQuery('SELECT participants FROM Groupchats WHERE id = ?;', [chatGroupId]))[0]?.participants.join(', ');
+      messages = await dbQuery(
         `SELECT * FROM Messages WHERE (sender_id IN (${participants}) AND group_id = ?) OR (sender_id = ? AND group_id = ?) ORDER BY created_on DESC LIMIT ?, ?;`,
-        [group, sender, group, offset, limit],
+        [chatGroupId, selfId, chatGroupId, offset, limit],
       );
       return res.json(messages);
-    } else if (!group && chat) {
-      const messages = await dbQuery(
+    } else if (!chatGroupId && chatUserId) {
+      messages = await dbQuery(
         'SELECT * FROM Messages WHERE (sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?) ORDER BY created_on desc LIMIT ?, ?;',
-        [sender, chat, chat, sender, offset, limit],
+        [selfId, chatUserId, chatUserId, selfId, offset, limit],
       );
 
       //if (offset * limit > messages.length) return res.json(null);
-      return res.json(messages);
+    } else {
+      return res.json(null);
     }
-    return res.json(null);
+    return res.json(messages);
   } catch (error) {
     return renderErrorPage(res, langError('commonError') + ' during get message ' + error);
   }
@@ -397,19 +452,17 @@ router.post('/message', async (req, res) => {
     const content = req.body.content;
     const receiverId = req.body.receiver;
     const group = req.body.group;
-    const senderToken = req.cookies.token;
 
     if (!validateMessage(content)) return throwError(res, langError('invalidMsg'));
+    if (!content || (!receiverId && !groupId)) return renderErrorPage(res, langError('missingData'));
 
-    //if (!content || !receiverId || !groupId) return renderErrorPage(res, langError('missingData'));
-    // add content check
+    const selfId = await getIdByToken(req.cookies.token);
 
-    const senderId = (await dbQuery('SELECT id FROM Users WHERE token = ?;', [senderToken]))[0].id;
     const type = group === 0 ? 'user' : 'group';
     const receiver = group === 0 ? 'receiver' : 'group';
-    await dbQuery(`INSERT INTO Messages (sender_id, ${receiver}_id, content) VALUES (?, ?, ?);`, [senderId, receiverId, content]);
-    console.log(`[${senderId}->${receiverId}(${type})]:"${content}"`);
-    broadcast(req.app.locals.clients, JSON.stringify({ senderId, content }), { type, id: receiverId });
+    await dbQuery(`INSERT INTO Messages (sender_id, ${receiver}_id, content) VALUES (?, ?, ?);`, [selfId, receiverId, content]);
+    console.log(`[${selfId}->${receiverId}(${type})]:"${content}"`);
+    broadcast(req.app.locals.clients, JSON.stringify({ selfId, content }), { type, id: receiverId });
     return res.redirect(`/messages?${type}=${receiverId}`);
   } catch (error) {
     return renderErrorPage(res, langError('commonError') + ' during send message ' + error);
