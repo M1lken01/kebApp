@@ -1,5 +1,11 @@
 const socket = new WebSocket('ws://' + document.URL.split('://')[1]);
 let docQuery;
+const badges = {
+  group: 'var(--accent-light)',
+  vip: 'orange',
+  moderator: 'purple',
+  admin: 'red',
+};
 
 socket.addEventListener('open', (event) => {
   console.log('WebSocket connection established on: ' + socket.url);
@@ -65,6 +71,13 @@ function parseQuery(url) {
   });
   return params;
 }
+
+function createBadgeHtml(user) {
+  let badge = user.username ? badges[user.permission] : badges['group'];
+  return badge !== undefined ? ` <span class="badge" style="background-color:${badge}">${user.permission || 'group'}</span>` : '';
+}
+
+const sanitizeHtml = (input) => window.DOMPurify.sanitize(input);
 
 function init() {
   loadTheme();

@@ -55,12 +55,11 @@ function appendContact(contact) {
   if ((document.getElementById(`accept-${contact.id}`) || document.getElementById(`cancel-${contact.id}`)) && contact.username) return;
   let type = 'user';
   let typeText = 'Add friend';
-  let suffix = '';
+  let suffix = createBadgeHtml(contact);
   let endpoint = 'add';
   if (!contact.username) {
     type = 'group';
     typeText = 'Join group';
-    suffix = ' <span class="badge">group</span>';
     endpoint = 'join';
   }
   let profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
@@ -79,12 +78,12 @@ function appendContact(contact) {
 }
 
 function appendRequest(contact, sent = false) {
-  let right = sent
+  const right = sent
     ? `<button id="cancel-${contact.id}">Cancel request</button>`
     : `<div><button id="decline-${contact.id}">Decline</button> | <button id="accept-${contact.id}">Accept</button></div>`;
-  let suffix = '';
-  let type = !contact.username ? 'group' : 'user';
-  let profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
+  const suffix = createBadgeHtml(contact);
+  const type = !contact.username ? 'group' : 'user';
+  const profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
   requestsContainer.innerHTML += `<li id="request-${contact.id}"><div><img src="${profilePic}" alt="pfp" /><p>${contact.username}${suffix}</p></div>${right}</li>`;
   addClickListener(`#decline-${contact.id}`, async () => {
     await removeFriend(contact.id);
@@ -100,12 +99,12 @@ function appendRequest(contact, sent = false) {
 function appendKnown(contact) {
   let type = 'user';
   let typeText = 'Remove friend';
-  let suffix = '';
+  let suffix = createBadgeHtml(contact);
+  console.log(suffix);
   let endpoint = 'del';
   if (!contact.username) {
     type = 'group';
     typeText = 'Leave group';
-    suffix = ' <span class="badge">group</span>';
     endpoint = 'leave';
   }
   let profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
@@ -134,7 +133,7 @@ function setOuterHtml(selector, html, parent = false) {
   try {
     let element = document.querySelector(selector);
     if (parent) element = element.parentElement;
-    if (element) element.outerHTML = html;
+    if (element) element.outerHTML = sanitizeHtml(html);
   } catch (error) {
     return console.log(error);
   }

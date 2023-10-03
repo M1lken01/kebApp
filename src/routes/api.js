@@ -287,7 +287,7 @@ router.get('/contacts/all', async (req, res) => {
     const selfId = await getIdByToken(req.cookies.token);
 
     let contacts = [];
-    const userQuery = 'SELECT id, username, picture, created_on FROM Users WHERE id NOT LIKE ?';
+    const userQuery = 'SELECT id, username, picture, created_on, permission FROM Users WHERE id NOT LIKE ?';
     const groupQuery = 'SELECT id, title, participants, picture, created_on FROM Groupchats';
     let userArgs = [`${userQuery} LIMIT ?;`, [selfId, limit]];
     let groupArgs = [`${groupQuery} LIMIT ?;`, [limit]];
@@ -315,7 +315,7 @@ router.get('/contacts/new', async (req, res) => {
 
     const contacts1 = await dbQuery(
       `
-      SELECT id, username, picture
+      SELECT id, username, picture, permission
       FROM Users
       WHERE id NOT IN (
         SELECT DISTINCT JSON_UNQUOTE(JSON_EXTRACT(participants, '$[*].id'))
@@ -343,7 +343,7 @@ router.get('/contacts/new', async (req, res) => {
     );
     const friends = await dbQuery(
       `
-      SELECT Users.id, Users.username, Users.picture
+      SELECT Users.id, Users.username, Users.picture, Users.permission
       FROM Users
       WHERE id NOT IN (
         SELECT user_id_1 FROM Friendships WHERE user_id_2 = ?
@@ -380,7 +380,7 @@ router.get('/contacts', async (req, res) => {
       [selfId, limit],
     );
     const friends = await dbQuery(
-      `SELECT Users.id, Users.username, Users.picture
+      `SELECT Users.id, Users.username, Users.picture, Users.permission
        FROM Users
        INNER JOIN Friendships ON (Users.id = Friendships.user_id_1 OR Users.id = Friendships.user_id_2)
        WHERE (Friendships.user_id_1 = ? OR Friendships.user_id_2 = ?) AND Friendships.state = 'accepted' AND Users.id != ?

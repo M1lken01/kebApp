@@ -257,7 +257,7 @@ footer {
 
 .messages-wrapper nav {
   min-height: 100dvh;
-  width: 20vw;
+  width: 400px;
 }
 
 .messages-wrapper main {
@@ -426,17 +426,13 @@ footer {
 
 .badge {
   background-color: var(--accent-light);
-  font-size: 0.8em;
-  padding: 2px;
+  font-size: 0.7em;
+  padding: 4px 6px;
   border-radius: 4px;
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
   -ms-border-radius: 4px;
   -o-border-radius: 4px;
-}
-
-.bg-red {
-  background-color: var(--clr-red);
 }
 
 @media (max-width: 768px) {
