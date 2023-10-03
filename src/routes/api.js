@@ -195,12 +195,8 @@ const upload = multer({
 router.post('/update/picture', upload.single('pfp'), async (req, res) => {
   try {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
-
     const token = req.body.token || req.cookies.token;
-    const remove = !parseInt(req.body.remove);
-
-    await dbQuery('UPDATE Users SET picture = ? WHERE token = ?;', [remove, token]);
-
+    await dbQuery('UPDATE Users SET picture = ? WHERE token = ?;', [!parseInt(req.body.remove), token]);
     return res.redirect('/profile');
   } catch (error) {
     return res.json(error);
@@ -210,13 +206,10 @@ router.post('/update/picture', upload.single('pfp'), async (req, res) => {
 router.post('/update/password', async (req, res) => {
   try {
     if (!hasPermission(req.cookies)) return res.send('no permission');
-
     const token = req.body.token || req.cookies.token;
     const hashedPassword = await hashPassword(req.body.password);
-
     await dbQuery('UPDATE Users SET password_hash = ? WHERE token = ?;', [hashedPassword, token]);
-
-    return res.redirect('/');
+    return res.redirect('/profile');
   } catch (error) {
     return res.json(error);
   }
@@ -230,10 +223,8 @@ router.post('/update/email', async (req, res) => {
 
     const token = req.body.token || req.cookies.token;
     const email = req.body.email;
-
     await dbQuery('UPDATE Users SET email = ? WHERE token = ?;', [email, token]);
-
-    return res.redirect('/');
+    return res.redirect('/profile');
   } catch (error) {
     return res.json(error);
   }
@@ -242,17 +233,13 @@ router.post('/update/email', async (req, res) => {
 router.post('/update/token', async (req, res) => {
   try {
     if (!hasPermission(req.cookies, 4)) return res.send('no permission');
-
     const oldToken = req.body.token || req.cookies.token;
     const newToken = await generateRandomToken();
-
     await dbQuery('UPDATE Users SET token = ? WHERE token = ?;', [newToken, oldToken]);
-
     res.cookie('token', newToken, {
       maxAge: tokenAge,
     });
-
-    return res.redirect('/');
+    return res.redirect('/profile');
   } catch (error) {
     return res.json(error);
   }
@@ -462,7 +449,7 @@ router.post('/message', async (req, res) => {
     const receiver = group === 0 ? 'receiver' : 'group';
     await dbQuery(`INSERT INTO Messages (sender_id, ${receiver}_id, content) VALUES (?, ?, ?);`, [selfId, receiverId, content]);
     console.log(`[${selfId}->${receiverId}(${type})]:"${content}"`);
-    broadcast(req.app.locals.clients, JSON.stringify({ selfId, content }), { type, id: receiverId });
+    broadcast(req.app.locals.clients, JSON.stringify({ senderId: selfId, content }), { type, id: receiverId });
     return res.redirect(`/messages?${type}=${receiverId}`);
   } catch (error) {
     return renderErrorPage(res, langError('commonError') + ' during send message ' + error);

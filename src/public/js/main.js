@@ -1,7 +1,8 @@
-const socket = new WebSocket('ws://localhost:3000/');
+const socket = new WebSocket('ws://' + document.URL.split('://')[1]);
+let docQuery;
 
 socket.addEventListener('open', (event) => {
-  console.log('WebSocket connection established.');
+  console.log('WebSocket connection established on: ' + socket.url);
 });
 
 socket.addEventListener('close', (event) => {
@@ -54,8 +55,20 @@ function parseCookies(cookieString) {
   }, {});
 }
 
+function parseQuery(url) {
+  const queryString = url.split('?')[1];
+  if (!queryString) return {};
+  const params = {};
+  queryString.split('&').forEach((keyValue) => {
+    const [key, value] = keyValue.split('=');
+    params[key] = decodeURIComponent(value);
+  });
+  return params;
+}
+
 function init() {
   loadTheme();
+  docQuery = parseQuery(document.URL);
 }
 
 window.addEventListener('load', init);

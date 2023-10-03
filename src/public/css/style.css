@@ -387,6 +387,7 @@ footer {
 }
 
 .people {
+  min-width: 90dvw;
   display: flex;
   justify-content: center;
   align-items: center;

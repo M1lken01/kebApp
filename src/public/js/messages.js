@@ -1,33 +1,16 @@
-const socketMessage = new WebSocket('ws://localhost:3000/?' + document.URL.split('?')[1]);
-
-socketMessage.addEventListener('open', (event) => {
-  console.log('WebSocket messages connection established.');
-});
-
-socketMessage.addEventListener('message', (event) => {
+socket.addEventListener('message', (event) => {
   const message = JSON.parse(event.data);
   fetch('/api/id')
     .then((res) => res.json())
     .then((selfUserId) => {
-      const chatPartnerId = document.URL.split('?user=')[1];
-      const isSelf = selfUserId.toString() === message.senderId.toString() ? 'self' : '';
       let senderId = message.senderId;
-      let username = chatPartnerId === undefined && senderId !== lastId ? idNameCache.find((item) => item.id === senderId).username : null; // give username if group chat and new message group
+      let username = docQuery.user === undefined && senderId !== lastId ? idNameCache.find((item) => item.id === senderId).username : null; // give username if group chat and new message group
       if (senderId !== lastId) lastId = senderId;
-      console.log({ sender: isSelf, content: message.content, username });
-      appendMessage({ sender: isSelf, content: message.content, username });
+      appendMessage({ sender: selfUserId.toString() === senderId.toString() ? 'self' : '', content: message.content, username });
     })
     .catch((error) => {
       console.error('Error:', error);
     });
-});
-
-socketMessage.addEventListener('close', (event) => {
-  console.log('WebSocket messages connection closed.');
-});
-
-socketMessage.addEventListener('error', (error) => {
-  console.error('WebSocket messages error:', error);
 });
 
 let idNameCache = {};
@@ -43,14 +26,12 @@ function loadMoreMessages() {
 //messagesContainer.addEventListener('scroll', loadMoreMessages);
 
 async function loadReceiver() {
-  const userUrlId = document.URL.split('?user=')[1];
-  const groupUrlId = document.URL.split('?group=')[1];
-  if (userUrlId === undefined && groupUrlId === undefined) return;
+  if (docQuery.user === undefined && docQuery.group === undefined) return;
   const chatName = document.getElementById('name');
   try {
     let response;
-    if (userUrlId !== undefined) response = await fetch('/api/userdata/' + userUrlId);
-    else if (groupUrlId !== undefined) response = await fetch('/api/groupdata/' + groupUrlId);
+    if (docQuery.user !== undefined) response = await fetch('/api/userdata/' + docQuery.user);
+    else if (docQuery.group !== undefined) response = await fetch('/api/groupdata/' + docQuery.group);
     if (response) {
       const data = await response.json();
       chatName.innerHTML = data.username || data.title || '';
@@ -62,12 +43,8 @@ async function loadReceiver() {
 
 async function loadMessages() {
   console.log(offset);
-  const userUrlId = document.URL.split('?user=')[1];
-  const groupUrlId = document.URL.split('?group=')[1];
-
-  if (userUrlId === undefined && groupUrlId === undefined) return;
-  const queryParams = userUrlId ? `user=${userUrlId}` : `group=${groupUrlId}`;
-
+  if (docQuery.user === undefined && docQuery.group === undefined) return;
+  const queryParams = docQuery.user ? `user=${docQuery.user}` : `group=${docQuery.group}`;
   try {
     const data = await (await fetch(`/api/messages?${queryParams}&offset=${offset}`)).json();
     console.log(data);
@@ -79,7 +56,7 @@ async function loadMessages() {
     data.reverse().forEach((message) => {
       const isSelf = selfUserId.toString() === message.sender_id.toString() ? 'self' : '';
 
-      let username = userUrlId === undefined && message.sender_id !== lastId ? idNameCache.find((item) => item.id === message.sender_id).username : null; // give username if group chat and new message group
+      let username = docQuery.user === undefined && message.sender_id !== lastId ? idNameCache.find((item) => item.id === message.sender_id).username : null; // give username if group chat and new message group
       if (message.sender_id !== lastId) lastId = message.sender_id;
 
       appendMessage({ sender: isSelf, content: message.content, username });
@@ -118,7 +95,7 @@ async function loadUsers() {
   }
 }
 
-function appendMessage(message) {
+function appendMessage(message, reverse = false) {
   const messages = document.getElementById('messages');
   const messageContainer = document.createElement('div');
 
@@ -161,7 +138,7 @@ function appendContact(contact) {
   const name = document.createElement('p');
   name.innerHTML = contact.username || contact.title + ' <span class="badge">group</span>';
 
-  // important: ^ this prolly voulnarible
+  // important: ^ this probably vulnerable
 
   if (contact.id === 1 && !contact.title) {
     name.innerHTML = contact.username + ' <span class="badge bg-red">admin</span>';
