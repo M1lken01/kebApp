@@ -35,9 +35,9 @@ async function loadMessages() {
     if (!messagesData || messagesData.length === 0) return;
     if (messagesOffset === 0) document.getElementById('messages').innerHTML = '';
 
-    const selfUserId = await fetch('/api/id').then((res) => res.json());
+    const selfId = await fetch('/api/id').then((res) => res.json());
     messagesData.reverse().forEach((message) => {
-      appendMessage(createMessage(message, selfUserId));
+      appendMessage(createMessage(message, selfId));
     });
 
     if (messagesOffset === 0) messagesContainer.scrollTop = messagesContainer.scrollHeight;
@@ -48,7 +48,7 @@ async function loadMessages() {
 }
 
 function createMessage(message, selfId) {
-  const isGroupAndIsNew = message.receiver_id === null && message.sender_id !== lastMessageSenderId;
+  const isGroupAndIsNew = !message.receiver_id && message.sender_id !== lastMessageSenderId;
   if (message.sender_id != lastMessageSenderId) lastMessageSenderId = message.sender_id;
   return {
     self: selfId.toString() === message.sender_id.toString(),
@@ -146,6 +146,12 @@ function toggleSidebar(show = true) {
   document.querySelector(show ? 'main' : 'nav').classList.add('mobile-hide');
 }
 
+async function messageListener() {
+  socket.addEventListener('message', async (event) => {
+    appendMessage(createMessage(JSON.parse(event.data), await (await fetch('/api/id')).json()));
+  });
+}
+
 function init() {
   if (Object.keys(docQuery).length === 0 && docQuery.constructor === Object) toggleSidebar();
 
@@ -153,18 +159,7 @@ function init() {
   loadUsers();
   loadContacts();
   loadMessages();
-
-  socket.addEventListener('message', (event) => {
-    const message = JSON.parse(event.data);
-    fetch('/api/id')
-      .then((res) => res.json())
-      .then((selfUserId) => {
-        appendMessage(createMessage(message, selfUserId));
-      })
-      .catch((error) => {
-        console.error('Error:', error);
-      });
-  });
+  messageListener();
 }
 
 window.addEventListener('load', init);

@@ -6,10 +6,8 @@ const knownContainer = document.querySelector('.people .known ul');
 
 async function loadContacts(filter = null) {
   try {
-    const data = await (await fetch('/api/contacts/new?filter=' + filter)).json();
-    console.log(data);
-    if (!data) return;
-    if (data.length === 0) return;
+    const data = await (await fetch(`/api/contacts/new?filter=${filter}`)).json();
+    if (!data || data.length === 0) return;
     contactsContainer.innerHTML = '';
     data.forEach((contact) => {
       appendContact(contact);
@@ -19,12 +17,10 @@ async function loadContacts(filter = null) {
   }
 }
 
-async function loadRequests() {
+async function loadRequests(filter = null) {
   try {
-    const data = await (await fetch('/api/contacts/requests')).json();
-    console.log(data);
-    if (!data) return;
-    if (data.length === 0) return;
+    const data = await (await fetch(`/api/contacts/requests?filter=${filter}`)).json();
+    if (!data || data.length === 0) return;
     requestsContainer.innerHTML = '';
     data.forEach((element) => {
       if (element.requestStatus === 'requestReceived' && element.id === element.user_id_1) appendRequest(element);
@@ -36,12 +32,10 @@ async function loadRequests() {
   }
 }
 
-async function loadKnown() {
+async function loadKnown(filter = null) {
   try {
-    const data = await (await fetch('/api/contacts/?filter=null')).json();
-    console.log(data);
-    if (!data) return;
-    if (data.length === 0) return;
+    const data = await (await fetch(`/api/contacts/?filter=${filter}`)).json();
+    if (!data || data.length === 0) return;
     knownContainer.innerHTML = '';
     data.forEach((contact) => {
       appendKnown(contact);
@@ -55,14 +49,14 @@ function appendContact(contact) {
   if ((document.getElementById(`accept-${contact.id}`) || document.getElementById(`cancel-${contact.id}`)) && contact.username) return;
   let type = 'user';
   let typeText = 'Add friend';
-  let suffix = createBadgeHtml(contact);
+  const suffix = createBadgeHtml(contact);
   let endpoint = 'add';
   if (!contact.username) {
     type = 'group';
     typeText = 'Join group';
     endpoint = 'join';
   }
-  let profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
+  const profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
   contactsContainer.innerHTML += `<li><div><img src=".${profilePic}" alt="pfp" /><p>${
     contact.username || contact.title
   }${suffix}</p></div><button id="${endpoint}-${contact.id}">${typeText}</button></li>`;
@@ -99,15 +93,14 @@ function appendRequest(contact, sent = false) {
 function appendKnown(contact) {
   let type = 'user';
   let typeText = 'Remove friend';
-  let suffix = createBadgeHtml(contact);
-  console.log(suffix);
+  const suffix = createBadgeHtml(contact);
   let endpoint = 'del';
   if (!contact.username) {
     type = 'group';
     typeText = 'Leave group';
     endpoint = 'leave';
   }
-  let profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
+  const profilePic = './imgs/' + (contact.picture ? `${type}/${contact.id}.png` : 'default_pfp_low.png');
   knownContainer.innerHTML += `<li><div><img src="${profilePic}" alt="pfp" /><p>${
     contact.username || contact.title
   }${suffix}</p></div><button id="${endpoint}-${contact.id}">${typeText}</button></li>`;

@@ -449,7 +449,7 @@ router.post('/message', async (req, res) => {
     const receiver = group === 0 ? 'receiver' : 'group';
     await dbQuery(`INSERT INTO Messages (sender_id, ${receiver}_id, content) VALUES (?, ?, ?);`, [selfId, receiverId, content]);
     console.log(`[${selfId}->${receiverId}(${type})]:"${content}"`);
-    broadcast(req.app.locals.clients, JSON.stringify({ senderId: selfId, content }), { type, id: receiverId });
+    broadcast(req.app.locals.clients, JSON.stringify({ sender_id: selfId, content }), { type, id: receiverId });
     return res.redirect(`/messages?${type}=${receiverId}`);
   } catch (error) {
     return renderErrorPage(res, langError('commonError') + ' during send message ' + error);
