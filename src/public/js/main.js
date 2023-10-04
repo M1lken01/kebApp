@@ -1,33 +1,11 @@
 const socket = new WebSocket('ws://' + document.URL.split('://')[1]);
 let docQuery;
 const badges = {
-  group: 'var(--accent-light)',
-  vip: 'orange',
-  dev: 'purple',
-  admin: 'red',
-};
-
-const permissions = {
-  group: {
-    full: 'group-chat',
-    short: 'group',
-    color: 'var(--accent-light)',
-  },
-  vip: {
-    full: 'vip',
-    short: 'vip',
-    color: 'orange',
-  },
-  dev: {
-    full: 'developer',
-    short: 'dev',
-    color: 'purple',
-  },
-  admin: {
-    full: 'administrator',
-    short: 'admin',
-    color: 'red',
-  },
+  group: 'Group',
+  banned: 'Banned',
+  vip: 'VIP',
+  dev: 'Dev',
+  admin: 'Admin',
 };
 
 socket.addEventListener('open', (event) => {
@@ -97,7 +75,7 @@ function parseQuery(url) {
 
 function createBadgeHtml(user) {
   let badge = user.username ? badges[user.permission] : badges['group'];
-  return badge !== undefined ? ` <span class="badge" style="background-color:${badge}">${user.permission || 'group'}</span>` : '';
+  return badge !== undefined ? ` <span class="badge" style="background-color:var(--clr-${badge.toLowerCase()})">${user.permission || 'group'}</span>` : '';
 }
 
 //const sanitizeHtml = (input) => window.DOMPurify.sanitize(input);

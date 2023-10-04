@@ -158,7 +158,7 @@ router.get('/shortuser', async (req, res) => {
   try {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
 
-    const userData = await dbQuery('SELECT id, username, email, picture FROM Users WHERE token = ?;', [req.cookies.token]);
+    const userData = await dbQuery('SELECT id, username, email, picture, permission FROM Users WHERE token = ?;', [req.cookies.token]);
 
     return res.json(userData[0]);
   } catch (error) {

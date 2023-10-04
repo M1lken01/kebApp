@@ -20,7 +20,7 @@ function init() {
     .then((data) => {
       console.log(data);
       if (!data) return;
-      document.getElementById('username').innerHTML = data.username;
+      document.getElementById('username').innerHTML = data.username + createBadgeHtml(data);
       document.getElementById('userId').value = data.id;
       if (data.picture === 1) pfpPreview.src = `./imgs/user/${data.id}.png`;
     })

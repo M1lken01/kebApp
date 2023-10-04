@@ -30,7 +30,7 @@ async function hasPermission(cookies, requiredPermission = 2) {
   const token = cookies?.token;
   if (!token) return requiredPermission <= 1;
   const user = await dbQuery(`SELECT permission FROM Users WHERE token = ?;`, [token]);
-  return requiredPermission <= ['banned', 'guest', 'member', 'vip', 'moderator', 'admin'].indexOf(user == null ? 'guest' : user[0].permission);
+  return requiredPermission <= ['banned', 'guest', 'member', 'vip', 'dev', 'admin'].indexOf(user == null ? 'guest' : user[0].permission);
 }
 
 async function generateRandomToken() {

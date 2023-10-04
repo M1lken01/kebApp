@@ -7,6 +7,12 @@
   --dark-mid: #1d1d1d;
   --dark-light: #262626;
   --clr-red: #ff0000;
+
+  --clr-group: #1a85e3;
+  --clr-banned: #000;
+  --clr-vip: #e3bb1a;
+  --clr-dev: #3a3b4f;
+  --clr-admin: #d90606;
 }
 
 html,
