@@ -4,11 +4,13 @@ let lastMessageSenderId = 0;
 
 const messagesContainer = document.getElementById('messages-container');
 
+const throttledLoad = throttle(() => loadMessages(true), 1000);
+
 function loadMoreMessages() {
-  if (messagesContainer.scrollTop < 10) loadMessages();
+  //if (messagesContainer.scrollTop < 10) throttledLoad();
 }
 
-//messagesContainer.addEventListener('scroll', loadMoreMessages);
+messagesContainer.addEventListener('scroll', loadMoreMessages);
 
 async function loadReceiver() {
   if (docQuery.user === undefined && docQuery.group === undefined) return;
@@ -26,12 +28,13 @@ async function loadReceiver() {
   }
 }
 
-async function loadMessages() {
+async function loadMessages(reverse = false) {
   console.log(messagesOffset);
   if (docQuery.user === undefined && docQuery.group === undefined) return;
   const queryParams = docQuery.user ? `user=${docQuery.user}` : `group=${docQuery.group}`;
   try {
-    const messagesData = await (await fetch(`/api/messages?${queryParams}&messagesOffset=${messagesOffset}`)).json();
+    const messagesData = await (await fetch(`/api/messages?${queryParams}&offset=${messagesOffset}`)).json();
+    console.log(messagesData);
     if (!messagesData || messagesData.length === 0) return;
     if (messagesOffset === 0) document.getElementById('messages').innerHTML = '';
 
@@ -77,7 +80,7 @@ async function loadUsers() {
   }
 }
 
-function appendMessage(message, reverse = false) {
+function appendMessage(message) {
   const messages = document.getElementById('messages');
   const messageContainer = document.createElement('div');
 

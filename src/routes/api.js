@@ -403,7 +403,7 @@ router.get('/messages', async (req, res) => {
     if (!hasPermission(req.cookies)) return res.json(langError('noPerm', true));
 
     const limit = parseInt(req.query.limit) || 1024;
-    const offset = parseInt(req.query.offset) || 0;
+    const offset = parseInt(req.query.offset) * limit || 0;
     const chatGroupId = parseInt(req.query.group);
     const chatUserId = parseInt(req.query.user);
 

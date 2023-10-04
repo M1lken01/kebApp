@@ -78,6 +78,19 @@ function createBadgeHtml(user) {
   return badge !== undefined ? ` <span class="badge" style="background-color:var(--clr-${badge.toLowerCase()})">${user.permission || 'group'}</span>` : '';
 }
 
+function throttle(func, limit) {
+  let inThrottle;
+  return function (...args) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => {
+        inThrottle = false;
+      }, limit);
+    }
+  };
+}
+
 //const sanitizeHtml = (input) => window.DOMPurify.sanitize(input);
 const sanitizeHtml = (input) => input;
 
