@@ -3,8 +3,31 @@ let docQuery;
 const badges = {
   group: 'var(--accent-light)',
   vip: 'orange',
-  moderator: 'purple',
+  dev: 'purple',
   admin: 'red',
+};
+
+const permissions = {
+  group: {
+    full: 'group-chat',
+    short: 'group',
+    color: 'var(--accent-light)',
+  },
+  vip: {
+    full: 'vip',
+    short: 'vip',
+    color: 'orange',
+  },
+  dev: {
+    full: 'developer',
+    short: 'dev',
+    color: 'purple',
+  },
+  admin: {
+    full: 'administrator',
+    short: 'admin',
+    color: 'red',
+  },
 };
 
 socket.addEventListener('open', (event) => {
@@ -77,7 +100,8 @@ function createBadgeHtml(user) {
   return badge !== undefined ? ` <span class="badge" style="background-color:${badge}">${user.permission || 'group'}</span>` : '';
 }
 
-const sanitizeHtml = (input) => window.DOMPurify.sanitize(input);
+//const sanitizeHtml = (input) => window.DOMPurify.sanitize(input);
+const sanitizeHtml = (input) => input;
 
 function init() {
   loadTheme();

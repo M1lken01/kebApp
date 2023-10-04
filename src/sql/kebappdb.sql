@@ -9,7 +9,7 @@ CREATE TABLE Users (
     email VARCHAR(128) NOT NULL,
     token VARCHAR(128) NOT NULL,
     picture BOOLEAN NOT NULL DEFAULT false,
-    permission ENUM ("admin", "moderator", "vip", "member", "banned") DEFAULT "member" NOT NULL,
+    permission ENUM ("admin", "dev", "vip", "member", "banned") DEFAULT "member" NOT NULL,
     created_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP NOT NULL
 );

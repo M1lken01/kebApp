@@ -1,24 +1,22 @@
 {
-  "name": "noname",
+  "name": "kebApp",
   "version": "1.0.0",
-  "description": "",
+  "description": "kebApp is a messaging app similar to Messenger.",
   "main": "app.js",
   "scripts": {
     "start": "node app.js"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "m1lk3n01",
+  "license": "MIT",
   "dependencies": {
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "cache-control": "^2.0.0",
     "cookie-parser": "^1.4.6",
-    "dompurify": "^3.0.6",
     "dotenv": "^16.3.1",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
     "express-session": "^1.17.3",
-    "express-ws": "^5.0.2",
     "http": "^0.0.1-security",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.6.1",
